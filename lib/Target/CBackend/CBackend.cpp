@@ -135,10 +135,14 @@ bool CWriter::isInlineAsm(Instruction& I) const {
 }
 
 bool CWriter::runOnFunction(Function &F) {
- // Do not codegen any 'available_externally' functions at all, they have
- // definitions outside the translation unit.
- if (F.hasAvailableExternallyLinkage())
-   return false;
+  // Do not codegen any 'available_externally' functions at all, they have
+  // definitions outside the translation unit.
+  if (F.hasAvailableExternallyLinkage())
+    return false;
+
+  // Do not codegen functions without "kernel" attribute.
+  if (!F.hasFnAttribute(Attribute::Kernel))
+    return false;
 
   LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
 
@@ -1748,10 +1752,15 @@ bool CWriter::doFinalization(Module &M) {
   // Output all code to the file
   std::string methods = Out.str();
   _Out.clear();
+#if 0
   generateHeader(M);
+
   std::string header = Out.str();
   _Out.clear();
   FileOut << header << methods;
+#else
+  FileOut << methods;
+#endif
 
   // Free memory...
   delete IL;
